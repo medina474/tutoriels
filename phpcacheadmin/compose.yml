@@ -1,0 +1,10 @@
+services:
+  phpcacheadmin:
+    image: robinn/phpcacheadmin
+    ports:
+      - "8080:80"
+    environment:
+      - PCA_REDIS_0_HOST=localhost
+      - PCA_REDIS_0_PORT=6379
+      - PCA_MEMCACHED_0_HOST=localhost
+      - PCA_MEMCACHED_0_PORT=11211
