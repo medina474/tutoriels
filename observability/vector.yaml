@@ -1,14 +1,34 @@
 sources:
   docker:
     type: docker_logs
-    exclude_containers: ["observability-victorialogs-1", "vector"]
+#    exclude_containers: ["observability-victorialogs-1", "vector"]
 
 transforms:
   msg_parser:
     type: remap
-    inputs: [docker]
+    inputs:
+      - docker
     source: |
-      ._msg = parse_json(.message) ?? .message
+      parsed = parse_json(.message) ?? null
+      if parsed != null {
+        . = merge!(., parsed)
+        .service = del(.label."com.docker.compose.service")
+        del(.message)
+      }
+
+      del(.image)
+      del(.container_created_at)
+      del(.container_id)
+      del(.container_name)
+
+      del(.label."com.docker.compose.config-hash")
+      del(.label."com.docker.compose.container-number")
+      del(.label."com.docker.compose.image")
+      del(.label."com.docker.compose.oneoff")
+      del(.label."com.docker.compose.project")
+      del(.label."com.docker.compose.project.config_files")
+      del(.label."com.docker.compose.project.working_dir")
+      del(.label."com.docker.compose.version")
 
 sinks:
   victorialogs:
@@ -19,3 +39,7 @@ sinks:
       - http://victorialogs:9428/insert/elasticsearch
     mode: bulk
     compression: gzip
+    query:
+      _msg_field: request
+      #_time_field: datetime
+      _stream_fields: service

@@ -2,7 +2,7 @@ services:
 
   mingrammer:
     image: mingrammer/flog:0.4.3
-    command: flog common -d 1s -l
+    command: flog --format json --delay 1s --loop
 
   victorialogs:
     image: victoriametrics/victoria-logs:v1.51.0
@@ -27,7 +27,6 @@ services:
       - ./vector.yaml:/etc/vector/vector.yaml:ro
     depends_on:
       - victorialogs
-
 
 volumes:
   victorialogs:
