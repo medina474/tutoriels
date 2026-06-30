@@ -19,6 +19,8 @@ composer create-project symfony/skeleton:"8.1.*" sae5_xxx_yyy
 cd sae5_xxx_yyy
 ```
 
+Il est préférable de partir le gabarit minimal, plutôt que sur le gabarit webapp. Il est important de comprendre les différents modules qui seront installés, plutôt que ne pas utiliser ceux présents par défaut sans comprendre leur utilité.
+
 Afficher les informations du projet en cours.
 
 ```shell
@@ -39,6 +41,21 @@ Si l'extensions Dev Containers a été développée par Microsoft pour Visual St
 
 https://blog.stephane-robert.info/docs/developper/autres-outils/ide/visual-studio-code/devcontainers/
 
+Utiliser l'environnement officiel proposé par Kévin Dunglas : [Symfony Docker](https://github.com/dunglas/symfony-docker)
+
+
+Kévin Dunglas est un contributeur actif au projet Symfony,où il a participé à plusieurs composants et améliorations, notamment autour des API, de la sérialisation et des standards du Web.
+
+Ces principales contributions :
+
+- **API Platform** : un framework construit sur Symfony permettant de développer rapidement des API REST, GraphQL et, plus récemment, des API temps réel. Il est utilisé par de nombreuses entreprises et administrations.
+- **FrankenPHP** : un serveur d'applications PHP moderne basé sur Caddy, conçu pour améliorer les performances et simplifier le déploiement des applications PHP. Il prend en charge des fonctionnalités comme les workers, HTTP/2, HTTP/3 et HTTPS automatique. Il est compatible à de nombreux projets Php comme Laravel et Wordpress.
+- **Mercure** : un protocole et un hub permettant de diffuser des mises à jour en temps réel vers les navigateurs via les technologies web standard.
+- **Vulcain** : une proposition visant à optimiser les API hypermédia en réduisant le nombre de requêtes HTTP nécessaires grâce à des mécanismes standardisés.
+
+Télécharger le dépôt et l'ouvrir avec Visual Studio Code, équipée de l'extension [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
+
+sous Linux, adapter à la fin les permissions sur les fichiers.
 
 ```shell
 docker compose exec php chown -R $(id -u):$(id -g) .
