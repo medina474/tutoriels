@@ -1,30 +1,47 @@
 # Symfony
 
+## Option A : Installation sur le poste local
+
 Installer le client Symfony
 
 https://symfony.com/download
 
-Vérifier les prérequis
+Vérifier les prérequis.
 
 ```shell
 symfony check:requirements
 ```
 
-Créer le projet
+Créer le projet.
 
 ```shell
-composer create-project symfony/skeleton:"8.1.*" sae5_medina_rositi
+composer create-project symfony/skeleton:"8.1.*" sae5_xxx_yyy
+cd sae5_xxx_yyy
 ```
+
+Afficher les informations du projet en cours.
 
 ```shell
 php bin/console about
 ```
 
-Démarrer le serveur web intégré
+Démarrer le serveur web intégré.
 
 ```shell
-cd sae5_medina_rositi
 symfony server:start
+```
+
+## Option B : Développer dans un Dev Container
+
+Dev Containers est une extension de Visual Studio Code qui crée un environnement de développement à l'intérieur d'un conteneur Docker. L'environnement est alors identique pour tous les membres de l'équipe, quel que soit leur système d'exploitation ou leur configuration locale. Par exemple le développeur A travaille sous Windows avec Php 8.2, B sous Mac avec Php 8.3 et C sous Linux avec Php 8.4.  Avec Dev Container les 3 travaillent avec la même version de Php.
+
+Si l'extensions Dev Containers a été développée par Microsoft pour Visual Studio Code, c'est maintenant un standard repris par les autres IDE comme phpStorm.
+
+https://blog.stephane-robert.info/docs/developper/autres-outils/ide/visual-studio-code/devcontainers/
+
+
+```shell
+docker compose exec php chown -R $(id -u):$(id -g) .
 ```
 
 ## Composants de développement
@@ -35,11 +52,16 @@ composer require --dev xxx/xxx
 
 * **symfony/maker-bundle** : Génère du code standard prêt à être personnalisé (CRUD, entités, contrôleurs) via la ligne de commande. Il standardise la structure et les bonnes pratiques Symfony. Cette commande est très utiles quand il faut créer simultanément plusieurs fichiers liés en même temps.
 
-* **symfony/test-pack** : Meta-package qui installe et configure les outils de test (comme PHPUnit) prêts à l’emploi. Il simplifie la mise en place d’une stratégie de tests dans Symfony.
-
 * **symfony/debug-pack** : Fournit un ensemble d’outils de debug (profiler, var-dumper, logs améliorés) pour analyser le comportement de l’application. Ajoute la célèbre barre de développement de Symfony.
 
+* **symfony/test-pack** : Meta-package qui installe et configure les outils de test (comme PHPUnit) prêts à l’emploi. Il simplifie la mise en place d’une stratégie de tests dans Symfony.
+
 * **phpstan/phpstan-symfony** : Intègre PHPStan un outil qui analyse le code source afin de détecter les erreurs potentielles.
+
+
+```shell
+composer require --dev symfony/maker-bundle symfony/debug-pack symfony/test-pack phpstan/phpstan-symfony
+```
 
 ```shell
 php bin/phpunit
@@ -55,7 +77,7 @@ php bin/console list make
 vendor/bin/phpstan analyse src
 ```
 
-## Composants
+## Composants frontend
 
 ```shell
 composer require xxx/xxx
@@ -66,6 +88,40 @@ composer require xxx/xxx
 * **symfony/asset** : Fournit des outils pour générer les URLs des ressources statiques (CSS, JavaScript, images). Il facilite également la gestion des versions d'assets pour le cache navigateur.
 
 * **symfony/asset-mapper** : Permet de gérer et exposer les fichiers CSS, JavaScript et autres ressources sans avoir besoin d'un bundler comme Webpack. Il résout automatiquement les dépendances ES Modules et optimise la gestion des assets.
+
+```shell
+composer require symfony/twig-bundle symfony/asset symfony/asset-mapper
+```
+
+### Tailwind CSS
+
+* **symfonycasts/tailwind-bundle** : Intègre Tailwind CSS dans Symfony avec une configuration simplifiée. Il permet de compiler automatiquement les styles Tailwind durant le développement et le déploiement.
+
+```shell
+php bin/console tailwind:init
+```
+
+#### Compilation continue avec Tailwind
+
+fichier `.symfony.local.yaml`
+
+```yaml
+workers:
+    tailwind:
+        cmd: ['symfony', 'console', 'tailwind:build', '--watch']
+```
+
+### JavaScript
+
+* **symfony/stimulus-bundle** : Intègre le framework JavaScript Stimulus dans Symfony. Il facilite l'ajout de comportements interactifs côté client tout en conservant une architecture simple et progressive.
+
+* **symfony/ux-turbo** :
+
+```shell
+composer require symfony/stimulus-bundle symfony/ux-turbo
+```
+
+## Composants backend
 
 * **symfony/orm-pack** : Pack de dépendances qui installe et configure Doctrine ORM pour Symfony. Il simplifie la mise en place de la persistance des données relationnelles.
 
@@ -82,30 +138,14 @@ composer require xxx/xxx
 * **symfony/messenger** : Fournit un système de bus de messages pour découpler les traitements de l'application. Il permet d'exécuter des tâches de manière synchrone ou asynchrone via des files d'attente et des workers.
 
 
-### Tailwind CSS
-
-* **symfonycasts/tailwind-bundle** : Intègre Tailwind CSS dans Symfony avec une configuration simplifiée. Il permet de compiler automatiquement les styles Tailwind durant le développement et le déploiement.
-
-### JavaScript
-
-* **symfony/stimulus-bundle** : Intègre le framework JavaScript Stimulus dans Symfony. Il facilite l'ajout de comportements interactifs côté client tout en conservant une architecture simple et progressive.
-
-### Sécurité
+## Conposants de sécurité
 
 * **symfony/security-bundle** : Implémente le système d'authentification et d'autorisation de Symfony. Il permet de gérer les utilisateurs, les rôles, les permissions et les mécanismes de connexion.
 
 * **symfony/security-csrf** : Fournit une protection contre les attaques CSRF (Cross-Site Request Forgery). Il génère et valide des jetons de sécurité pour les formulaires et les actions sensibles.
 
 
-#### Compilation continue avec Tailwind
 
-fichier `.symfony.local.yaml`
-
-```yaml
-workers:
-    tailwind:
-        cmd: ['symfony', 'console', 'tailwind:build', '--watch']
-```
 
 #### Déploiement, passage en production
 
@@ -157,6 +197,47 @@ php bin/console make:crud Country
 bin/console doctrine:migration:diff
 composer require symfony/doctrine-messenger
 
-Unknown database type "geometry" requested, Doctrine\DBAL\Platforms\PostgreSQL120Platform may  
+Unknown database type "geometry" requested, Doctrine\DBAL\Platforms\PostgreSQL120Platform may
    not support it.
-   
+
+"symfony/maker-bundle": "^1.0",
+        "symfony/debug-pack": "*",
+        "symfony/test-pack": "*"
+
+       "symfony/asset": "*",
+        "symfony/asset-mapper": "*",
+        "symfony/stimulus-bundle": "*",
+        "symfony/ux-turbo": "*",
+
+            "symfony/validator": "*",
+                    "symfony/orm-pack": "*",
+                    "symfony/form": "*",
+
+"description": "A webapp pack on top of the default skeleton",
+    "require": {
+
+        "symfony/debug-pack": "*",
+        "symfony/doctrine-messenger": "*",
+        "symfony/expression-language": "*",
+        "symfony/http-client": "*",
+        "symfony/intl": "*",
+        "symfony/mailer": "*",
+        "symfony/maker-bundle": "^1.0",
+        "symfony/mime": "*",
+        "symfony/monolog-bundle": "^3.1|^4.0",
+        "symfony/notifier": "*",
+        "symfony/process": "*",
+        "symfony/profiler-pack": "*",
+        "symfony/security-bundle": "*",
+        "symfony/serializer-pack": "*",
+        "symfony/string": "*",
+        "symfony/test-pack": "*",
+        "symfony/translation": "*",
+        "symfony/twig-pack": "bundle + extra",
+        "symfony/web-link": "*"
+    },
+    "require-dev": {
+
+        "symfony/profiler-pack": "*",
+
+    },
