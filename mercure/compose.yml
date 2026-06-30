@@ -4,6 +4,7 @@ services:
     image: dunglas/mercure:v0.24
     restart: no
     ports:
+       - 80:80
        - 443:443
     environment:
       MERCURE_PUBLISHER_JWT_KEY: '!ChangeThisMercureHubJWTSecretKey!'
@@ -12,7 +13,7 @@ services:
       MERCURE_EXTRA_DIRECTIVES: |
         cors_origins https://localhost:8000
       # Uncomment the following line to disable HTTPS,
-      #SERVER_NAME: ':80'
+      SERVER_NAME: ':80'
     # Comment the following line to disable the development mode
     command: /usr/bin/caddy run --config /etc/caddy/dev.Caddyfile
     healthcheck:
