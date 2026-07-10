@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <div id="zone" style="margin-top:2000px; margin-bottom:200px; border:1px solid black; padding:1em">Coucou</div>
+  <script>
+    var options = {
+      rootMargin: "300px",
+      threshold: 1.0,
+    };
+
+    var observer = new IntersectionObserver(function (entries, observer) {
+      entries.forEach((entry) => {
+        console.log(entry.isIntersecting)
+        // chaque élément de entries correspond à une variation
+        // d'intersection pour un des éléments cible:
+        //   entry.boundingClientRect
+        //   entry.intersectionRatio
+        //   entry.intersectionRect
+        //   entry.isIntersecting
+        //   entry.rootBounds
+        //   entry.target
+        //   entry.time
+      });
+    }, options);
+
+    var target = document.querySelector("#zone");
+    observer.observe(target);
+  </script>
+</body>
+</html>
