@@ -1,0 +1,29 @@
+networks:
+  boilerplate_network:
+    external: true
+
+services:
+
+  dragonfly:
+    image: docker.dragonflydb.io/dragonflydb/dragonfly
+    container_name: dragonfly
+    ulimits:
+      memlock: -1
+    ports:
+      - ${DRAGONFLY_PORT:-6379}:6379
+    networks:
+      - boilerplate_network
+    volumes:
+      - ./data:/data
+    labels:
+      prometheus-job: dragonfly
+
+  webdis:
+    container_name: webdis
+    image: nextcloud/webdis:2024.04
+    build:
+      context: .
+    networks:
+      - boilerplate_network
+    ports:
+      - 7379:7379
