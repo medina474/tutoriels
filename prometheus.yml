@@ -1,0 +1,25 @@
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    scrape_interval: 1m
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'apps_dynamiques'
+    file_sd_configs:
+      - files:
+        - /etc/prometheus/targets/*.yml
+        
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 15s
+        filters:
+          - name: label
+            values: ['prometheus=true']
+    relabel_configs:
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: 'container'

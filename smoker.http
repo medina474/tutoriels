@@ -1,0 +1,32 @@
+POST https://smocker_admin.localhost/mocks
+Content-Type: application/x-yaml
+
+- request:
+    method: GET
+    path: /hello/world
+  response:
+    status: 200
+    headers:
+      Content-Type: application/json
+    body: >
+      {
+        "message": "Hello, World!"
+      }
+
+- request:
+    method: POST
+    path: /hello/world
+  response:
+    status: 500
+    headers:
+      Content-Type: application/json
+    body: >
+      {
+        "message": "error"
+      }
+
+### Test GET
+GET https://smocker.localhost/hello/world
+
+### Test POST
+POST https://smocker.localhost/hello/world

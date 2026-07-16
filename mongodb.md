@@ -1,0 +1,15 @@
+## FerretDB
+
+```yaml
+services:
+  ferretdb:
+    image: ghcr.io/ferretdb/ferretdb
+    container_name: ferretdb
+    ports:
+      - 27017:27017
+    networks:
+      - host_bridge
+      - postgresql_internal
+    environment:
+      FERRETDB_POSTGRESQL_URL: ${FERRETDB_POSTGRESQL_URL}
+```

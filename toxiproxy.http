@@ -1,0 +1,37 @@
+### Liste des proxies
+GET https://toxiproxy.localhost/proxies
+
+### Configurer un point d'entrée
+POST http://toxiproxy.localhost/proxies
+Content-Type: application/json"
+
+{
+  "name": "whoami",
+  "listen": "0.0.0.0:9001",
+  "upstream": "whoami:80"
+}
+
+### Empoisonner le point d'entrée
+
+# latence 750ms ± 250
+POST http://toxiproxy.localhost/proxies/whoami/toxics
+Content-Type: application/json
+
+{
+  "name": "latency_down_api",
+  "type": "latency",
+  "stream": "downstream",
+  "attributes": {
+    "latency": 1250,
+    "jitter": 250
+  }
+}
+
+### WhoAmi en accès direct
+GET http://whoami.localhost
+
+### WhoAmI via ToxiProxy
+GET http://whoami_toxic.localhost
+
+### Supprimer le point d'entrée
+DELETE https://toxiproxy.localhost/proxies/whoami
