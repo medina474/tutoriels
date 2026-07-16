@@ -1,0 +1,19 @@
+OPTIONS  https://boilerplate.docker.org/postgraphile/graphql
+Content-Type: application/json
+X-REQUEST-TYPE: GraphQL
+
+###
+POST https://boilerplate.docker.org/postgraphile/graphql
+Content-Type: application/graphql
+
+query MyQuery {
+  query {
+    allEmployes {
+      nodes {
+        nom
+        poste
+        salaire
+      }
+    }
+  }
+}
