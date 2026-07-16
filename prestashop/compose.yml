@@ -1,0 +1,43 @@
+volumes:
+  mariadb_data:
+
+networks:
+  default:
+    name: admin_net
+    external: true
+
+services:
+  mariadb:
+    image: mariadb:11.0
+    container_name: prestashop_mariadb
+    restart: no
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    environment:
+      MARIADB_DATABASE: prestashop
+      MARIADB_ROOT_PASSWORD: supermotdepasse
+      MARIADB_USER: user
+      MARIADB_PASSWORD: motdepasse
+
+  prestashop:
+    image:  prestashop/prestashop:1.7-7.3
+    container_name: prestashop
+    restart: no
+    environment:
+      PS_DEV_MODE: ${PRESTASHOP_DEV_MODE}
+      PS_DEMO_MODE: ${PRESTASHOP_DEMO_MODE}
+      PS_LANGUAGE: ${PRESTASHOP_LANGUAGE:-fr}
+      PS_COUNTRY: ${PRESTASHOP_COUNTRY:-FR}
+      PS_INSTALL_AUTO: ${PRESTASHOP_INSTALL_AUTO}
+      PS_DOMAIN: ${PRESTASHOP_DOMAIN}
+      PS_FOLDER_ADMIN: ${PRESTASHOP_FOLDER_ADMIN}
+
+      ADMIN_MAIL: ${PRESTASHOP_ADMIN_MAIL}
+      ADMIN_PASSWD: ${PRESTASHOP_ADMIN_PASSWD}
+
+      DB_SERVER: ${PRESTASHOP_DB_SERVER}
+      DB_NAME: ${PRESTASHOP_DB_NAME}
+      DB_USER: ${PRESTASHOP_DB_USER}
+      DB_PASSWD: ${PRESTASHOP_DB_PASSWD}
+    ports:
+      - 9004:80
