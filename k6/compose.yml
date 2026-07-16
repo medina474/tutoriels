@@ -1,0 +1,12 @@
+networks:
+  boilerplate_network:
+    external: true
+
+services:   
+  # siteinspector:
+  #   image: siteinspector/siteinspector:latest
+  #   container_name: siteinspector
+  #   volumes:
+  #     - uptime:/app/data
+  #   ports:
+  #     - 3001:3001
