@@ -68,7 +68,9 @@ composer require symfony/stimulus-bundle symfony/ux-turbo
 * **symfony/security-csrf** : Fournit une protection contre les attaques CSRF (Cross-Site Request Forgery). Il génère et valide des jetons de sécurité pour les formulaires et les actions sensibles.
 
 
+## Observabilité
 
+* **monolog-bundle** : Intègre la gestion des journaux d'événements (logs). Il permet de configurer plusieurs canaux et destinations comme des fichiers, bases de données ou services externes.
 
 #### Déploiement, passage en production
 
@@ -98,10 +100,10 @@ php bin/console asset-map:compile
 
 https://github.com/dunglas/symfony-docker?
 
-## Première page
+## Pages de démonstration
 
 ```shell
-php bin/console make:controller HomeController
+php bin/console make:controller DemoController
 ```
 
 ## Première entité
