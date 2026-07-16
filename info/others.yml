@@ -1,0 +1,11 @@
+  mongodb:
+    image: mongo:7-jammy
+    container_name: mongodb
+    networks:
+      - proxy-public
+    volumes:
+      - mongodb:/data/db
+      - mongodb_config:/data/configdb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${PASSWORD}
