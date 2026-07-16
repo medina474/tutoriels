@@ -1,0 +1,73 @@
+networks:
+  boilerplate_network:
+    external: true
+
+configs:
+  mariadb_initdb:
+    file: ./docker-entrypoint-initdb.d
+  exporter_config:
+    file: ./my.cnf
+
+services:
+
+# MariaDB Server
+# https://mariadb.org/
+
+  mariadb:
+    image: mariadb:${MARIADB_VERSION:-11.3}
+    container_name: mariadb
+    restart: no
+    configs:
+      - source: mariadb_initdb
+        target: /docker-entrypoint-initdb.d
+    volumes:
+      - ./data:/var/lib/mysql
+    networks:
+      - boilerplate_network
+    ports:
+      - 3306:3306
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+      MARIADB_USER: ${MARIADB_USER}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+
+# Administration
+# https://www.phpmyadmin.net/
+
+  phpmyadmin:
+    image: phpmyadmin:${PHPMYADMIN_VERSION}
+    container_name: phpmyadmin
+    depends_on:
+      - mariadb
+    restart: no
+    networks:
+      - boilerplate_network
+    environment:
+      #PMA_ARBITRARY: 1 # Allowing you to specify any MySQL/MariaDB server on the login page.
+      PMA_HOST: mariadb
+      PMA_ABSOLUTE_URI: https://localhost/phpmyadmin/
+    labels:
+      traefik.enable: true
+      traefik.http.routers.phpmyadmin.entrypoints: websecure
+      traefik.http.routers.phpmyadmin.tls: true
+      traefik.http.routers.phpmyadmin.rule: ${PHPMYADMIN_TRAEFIK_RULE}
+      traefik.http.services.phpmyadmin.loadbalancer.server.port: 80
+      traefik.http.routers.phpmyadmin.middlewares: strip-prefix
+
+# Télémétrie
+# https://hub.docker.com/r/prom/mysqld-exporter/
+
+  mysqld-exporter:
+    container_name: mariadb-exporter
+    image: prom/mysqld-exporter
+    networks:
+      - boilerplate_network
+    ports:
+      - 9104:9104
+    configs:
+      - source: exporter_config
+        target: /etc/my.cnf
+    command:
+      - --config.my-cnf=/etc/my.cnf
+    labels:
+      prometheus-job: mariadb
