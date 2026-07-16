@@ -1,0 +1,4 @@
+- labels:
+    job: "pompes"
+  targets:
+    - "pompes:8099"
