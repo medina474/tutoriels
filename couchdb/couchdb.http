@@ -1,0 +1,14 @@
+@p={{$dotenv COUCH_DB_PASSWORD}}
+@baseUrl = http://root:{{p}}@localhost:5984
+
+GET http://localhost:5984/
+
+
+### List of databases
+GET {{baseUrl}}/_all_dbs
+
+### 
+https://echo.free.beeceptor.com
+Content-Type: application/json
+
+{ "test": "{{p}}" }
