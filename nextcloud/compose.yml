@@ -1,0 +1,74 @@
+networks:
+  boilerplate_network:
+    external: true
+
+services:
+
+  apache:
+    container_name: nextcloud-apache
+    image: nextcloud/apache:2024.04
+    build:
+      context: ./apache
+    ports:
+      - 8085:80
+    networks:
+      - boilerplate_network
+    volumes:
+      - ./nextcloud:/var/www/html
+    labels:
+      traefik.enable: true
+      traefik.http.routers.nextcloud.entrypoints: websecure
+      traefik.http.routers.nextcloud.tls: true
+      traefik.http.routers.nextcloud.rule: ${NEXTCLOUD_TRAEFIK_RULE}
+      traefik.http.services.nextcloud.loadbalancer.server.port: 80
+      traefik.http.routers.nextcloud.middlewares: nextcloud_redirectregex
+      traefik.http.middlewares.nextcloud_redirectregex.redirectregex.permanent: true
+      traefik.http.middlewares.nextcloud_redirectregex.redirectregex.regex: 'https://(.*)/.well-known/(?:card|cal)dav'
+      traefik.http.middlewares.nextcloud_redirectregex.redirectregex.replacement: 'https://$${1}/remote.php/dav'
+      # http -> redirect to https
+      traefik.http.routers.nextcloud_unsecure.entrypoints: web
+      traefik.http.routers.nextcloud_unsecure.rule: ${NEXTCLOUD_TRAEFIK_RULE}
+      traefik.http.routers.nextcloud_unsecure.middlewares: redirect_to_websecure
+
+  php:
+    container_name: nextcloud-php
+    image: nextcloud/php:2024.04
+    build:
+      context: ./php
+    networks:
+      - boilerplate_network
+    volumes:
+      - ./nextcloud:/var/www/html
+
+  php-exporter:
+    container_name: php-fpm_exporter
+    image: hipages/php-fpm_exporter:2.2
+    networks:
+      - boilerplate_network
+    ports:
+      - 9253:9253
+    environment:
+      - PHP_FPM_SCRAPE_URI="tcp://php:9000/status"
+    labels:
+      prometheus-job: php
+
+  onlyoffice:
+    container_name: onlyoffice
+    image: onlyoffice/documentserver
+    networks:
+      - boilerplate_network
+    ports:
+      - 8086:80
+    volumes:
+     - ./data/logs:/var/log/onlyoffice
+     - ./data/data:/var/www/onlyoffice/Data
+     - ./data/lib:/var/lib/onlyoffice
+     - ./data/db:/var/lib/postgresql
+    environment:
+      JWT_SECRET: sdf4s654fs54fs6df46s5f4std4z8c2e
+    labels:
+      traefik.enable: true
+      traefik.http.routers.onlyoffice.entrypoints: websecure
+      traefik.http.routers.onlyoffice.tls: true
+      traefik.http.routers.onlyoffice.rule: Host(`onlyoffice.docker.org`)
+      traefik.http.services.onlyoffice.loadbalancer.server.port: 80
