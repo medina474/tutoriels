@@ -1,0 +1,99 @@
+networks:
+  boilerplate_network:
+    external: true
+
+configs:
+  grafana_config:
+    file: ./grafana
+  prometheus_config:
+    file: ./prometheus/prometheus.yml
+  alertmanager_config:
+    file: ./alertmanager
+
+volumes:
+  grafana:
+  prometheus:
+  alertmanager:
+
+services:
+
+  grafana:
+    container_name: grafana
+    image: grafana/grafana-oss:${GRAFANA_VERSION:-10.3.5}
+    deploy:
+      resources:
+        limits:
+          memory: 100M
+    configs:
+      - source: grafana_config
+        target: /etc/grafana
+    volumes:
+      - grafana:/var/lib/grafana
+    networks:
+      - boilerplate_network
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_SECURITY_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_SECURITY_ADMIN_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: false
+      GF_FEATURE_TOGGLES_ENABLE: traceQLStreaming metricsSummary lokiFormatQuery alertmanagerRemoteOnly
+    labels:
+      traefik.enable: true
+      traefik.http.routers.grafana.entrypoints: websecure
+      traefik.http.routers.grafana.tls: true
+      traefik.http.routers.grafana.rule: ${GRAFANA_TRAEFIK_RULE}
+      traefik.http.services.grafana.loadbalancer.server.port: ${GRAFANA_PORT}
+
+  prometheus:
+    container_name: prometheus
+    image: boilerplate/prometheus:${PROMETHEUS_VERSION:-v2.51.0}
+    build:
+      context: ./prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--web.external-url=/prometheus/'
+    configs:
+      - source: prometheus_config
+        target: /etc/prometheus/prometheus.yml
+    volumes:
+      - prometheus:/prometheus
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - boilerplate_network
+    ports:
+      - ${PROMETHEUS_PORT}:9090
+    extra_hosts:
+      - host.docker.internal=host-gateway
+    labels:
+      traefik.enable: true
+      traefik.http.routers.prometheus.entrypoints: websecure
+      traefik.http.routers.prometheus.tls: true
+      traefik.http.routers.prometheus.rule: ${PROMETHEUS_TRAEFIK_RULE}
+      traefik.http.services.prometheus.loadbalancer.server.port: ${PROMETHEUS_PORT}
+
+  alertmanager:
+    container_name: alertmanager
+    image: prom/alertmanager:${ALERTMANAGER_VERSION}
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--log.level=debug'
+    ports:
+      - ${ALERTMANAGER_PORT:-9093}:9093
+    configs:
+      - source: alertmanager_config
+        target: /etc/alertmanager
+    networks:
+      - boilerplate_network
+    volumes:
+      - alertmanager:/alertmanager
+    labels:
+      traefik.enable: true
+      traefik.http.routers.alertmanager.entrypoints: web
+      traefik.http.routers.alertmanager.rule: ${ALERTMANAGER_TRAEFIK_RULE}
+      traefik.http.services.alertmanager.loadbalancer.server.port: 9093
+
+# https://gitlab.com/rsrchboy/prometheus-docker-discovery
+#  docker-discovery:
+#    container_name: docker-discovery
+#    image: registry.gitlab.com/rsrchboy/prometheus-docker-discovery:latest
+#    volumes:
+#      - /var/run/docker.sock:/var/run/docker.sock:ro
