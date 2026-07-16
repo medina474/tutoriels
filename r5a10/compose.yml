@@ -1,0 +1,433 @@
+configs:
+  mariadb_initdb:
+    file: ./mariadb/docker-entrypoint-initdb.d
+  postgresql_initdb:
+    file: ./postgresql/docker-entrypoint-initdb.d
+  prometheus_config:
+    file: ./prometheus/prometheus.yml
+  grafana_provisioning:
+    file: ./grafana/provisioning
+  grafana_dashboards:
+    file: ./grafana/dashboards
+  rabbit_enabled_plugins:
+    file: ./rabbit_enabled_plugins
+
+volumes:
+  mariadb: {}
+  redis: {}
+  prometheus: {}
+  grafana: {}
+  inbucket_config: {}
+  inbucket_storage: {}
+  mailpit: {}
+  mongodb: {}
+  mongodb_configdb: {}
+  couchdb: {}
+  neo4j: {}
+  neo4j_logs: {}
+  minio: {}
+  postgresql: {}
+  ferretdb: {}
+  rabbitmq: {}
+  rabbitmq_log: {}
+
+services:
+
+# MariaDB Server
+# One of the most popular open source relational databases
+# https://mariadb.org/
+
+  mariadb:
+    container_name: r5a10-mariadb
+    build:
+      context: ./mariadb
+    restart: no
+    configs:
+      - source: mariadb_initdb
+        target: /docker-entrypoint-initdb.d
+    volumes:
+      - mariadb:/var/lib/mysql
+    #ports:
+    #  - 3306:3306
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MARIADB_USER: ${DB_NAME}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+
+# Redis
+# In-memory key-value database
+# https://redis.io/fr/
+
+  redis:
+    container_name: r5a10-redis
+    image: redis:${REDIS_VERSION:-7.2.5}
+    restart: no
+    command:
+      - 'redis-server'
+      - '--save 60 1'
+      - '--loglevel warning'
+      - '--requirepass ${DB_ROOT_PASSWORD}'
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${DB_ROOT_PASSWORD}", "--raw", "incr", "ping" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    volumes:
+      - redis:/data
+
+# NocoDB
+# Instantly turn your Database into a No-Code Platform.
+# https://nocodb.com/
+
+  nocodb:
+    container_name: r5a10-nocodb
+    image: nocodb/nocodb:${NOCODB_VERSION:-0.251.3}
+    ports:
+      - 8080:8080
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NC_DB: ${NOCODB_DB_CLIENT}://${NOCODB_DB_HOST}?u=${NOCODB_DB_USER:-nocodb}&p=${NOCODB_DB_PASSWORD}&d=${NOCODB_DB_DATABASE:-nocodb}
+      NC_ADMIN_EMAIL: ${ADMIN_EMAIL}
+      NC_ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      NC_REDIS_URL: redis://:${DB_ROOT_PASSWORD}@${REDIS_HOST:-redis}
+
+# Directus
+# The backend to build anything or everything.
+# https://directus.io/
+
+  directus:
+    container_name: r5a10-directus
+    image: directus/directus:${DIRECTUS_VERSION:-11.0.0-rc.3}
+    volumes:
+      - ./data/directus/uploads:/directus/uploads
+      - ./data/directus/extensions:/directus/extensions
+    ports:
+      - 8081:${DIRECTUS_PORT:-8081}
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      KEY: ${DIRECTUS_KEY}
+      SECRET: ${DIRECTUS_SECRET}
+      PUBLIC_URL: http://127.0.0.1:8081/
+      PORT: ${DIRECTUS_PORT:-8081}
+
+      DB_CLIENT: ${DIRECTUS_DB_CLIENT}
+      DB_HOST: ${DIRECTUS_DB_HOST}
+      DB_PORT: ${DIRECTUS_DB_PORT}
+      DB_DATABASE: ${DIRECTUS_DB_DATABASE:-directus}
+      DB_USER: ${DIRECTUS_DB_USER:-directus}
+      DB_PASSWORD: ${DIRECTUS_DB_PASSWORD}
+
+      CACHE_ENABLED: true
+      CACHE_AUTO_PURGE: true
+      CACHE_STORE: redis
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PASSWORD: ${DB_ROOT_PASSWORD}
+
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+
+      EMAIL_FROM: directus@univ-lorraine.fr
+      EMAIL_TRANSPORT: smtp
+      EMAIL_SMTP_HOST: ${DIRECTUS_SMTP_HOST:-inbucket}
+      EMAIL_SMTP_PORT: ${DIRECTUS_SMTP_PORT:-2500}
+
+# Strapi
+# Open-source headless CMS 100% JavaScript
+# https://strapi.io/
+  strapi:
+    container_name: r5a10-strapi
+    image: naskio/strapi:${STRAPI_VERSION:-4.25.6}
+    environment:
+      NODE_ENV: development
+      DATABASE_CLIENT: postgres
+      DATABASE_HOST: postgresql
+      DATABASE_PORT: 5432
+      DATABASE_NAME: strapi
+      DATABASE_USERNAME: strapi
+      DATABASE_PASSWORD: strapi
+    ports:
+      - 1337:1337
+    volumes:
+      - ./data/strapi:/srv/app
+
+# Inbucket
+# Email testing application;
+# it will accept messages for any email address and make them available to view via a web interface.
+# https://inbucket.org/
+  # inbucket:
+  #   container_name: r5a10-inbucket
+  #   image: inbucket/inbucket:${INBUCKET_VERSION:-3.0.3}
+  #   ports:
+  #     - '2500:2500' # SMTP
+  #     - '1100:1100' # POP3
+  #     - '8082:9000' # web interface
+  #   volumes:
+  #     - inbucket_config:/config
+  #     - inbucket_storage:/storage
+
+# Mailpit
+# email & SMTP testing tool with API for developers
+# https://mailpit.axllent.org/
+  mailpit:
+    container_name: r5a10-mailpit
+    image: axllent/mailpit:${MAILPIT_VERSION:-v1.19}
+    ports:
+      - 8025:8025
+      - 1025:1025
+    volumes:
+      - mailpit:/data
+    environment:
+      TZ: Europe/Paris
+
+# Prometheus
+# Monitoring system & time series database
+# https://prometheus.io/
+  prometheus:
+    container_name: r5a10-prometheus
+    image: prom/prometheus:${PROMETHEUS_VERSION:-v2.53.0}
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    configs:
+      - source: prometheus_config
+        target: /etc/prometheus/prometheus.yml
+    volumes:
+      - prometheus:/prometheus
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - 9090:9090
+    extra_hosts:
+      - host.docker.internal=host-gateway
+#/etc/docker/daemon.json
+#{
+#  "metrics-addr": "0.0.0.0:9323"
+#}
+
+# Grafana
+# Open source analytics & monitoring solution for every database.
+# https://grafana.com/
+  grafana:
+    container_name: r5a10-grafana
+    image: grafana/grafana-oss:${GRAFANA_VERSION:-11.1.3}
+    deploy:
+      resources:
+        limits:
+          memory: 100M
+    configs:
+      - source: grafana_provisioning
+        target: /etc/grafana/provisioning
+      - source: grafana_dashboards
+        target: /etc/grafana/dashboards
+    volumes:
+      - grafana:/var/lib/grafana
+    ports:
+      - 3000:3000
+    environment:
+      GF_SECURITY_ADMIN_EMAIL: ${ADMIN_EMAIL}
+      GF_SECURITY_ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      GF_USERS_DEFAULT_THEME: light
+      GF_USERS_ALLOW_SIGN_UP: false
+      GF_FEATURE_TOGGLES_ENABLE: traceQLStreaming metricsSummary lokiFormatQuery alertmanagerRemoteOnly
+
+# MongoDB
+#
+# https://www.mongodb.com/
+  mongodb:
+    container_name: r5a10-mongodb
+    image: mongo:${MONGODB_VERSION:-7.0.7-jammy}
+    volumes:
+      - mongodb_configdb:/data/configdb
+      - mongodb:/data/db
+    ports:
+      - 27017:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${DB_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+
+# CouchDB
+# Single-node document database
+# https://couchdb.apache.org/
+  couchdb:
+    container_name: r5a10-couchdb
+    image: couchdb:${COUCH_DB_VERSION:-3.3}
+    volumes:
+      - couchdb:/opt/couchdb/data
+    ports:
+      - 5984:5984
+    environment:
+      COUCHDB_USER: ${DB_ROOT_USER}
+      COUCHDB_PASSWORD: ${DB_ROOT_PASSWORD}
+
+# Neo4J
+# Des graphes ultra-rapides, à l’échelle du pétaoctet
+# https://neo4j.com/
+  neo4j:
+    container_name: r5a10-neo4j
+    image: neo4j:${NEO4J_VERSION:-5.18.1-community}
+    ports:
+      - 7474:7474
+      - 7687:7687
+    volumes:
+      - neo4j:/data
+      - neo4j_logs:/logs
+    environment:
+      NEO4J_AUTH: neo4j/${DB_ROOT_PASSWORD}
+
+# MinIO
+# high-performance, Amazon S3 compatible object store. It is built for large scale AI/ML, data lake and database workloads.
+# https://min.io/
+  minio:
+    container_name: r5a10-minio
+    image: minio/minio
+    command: server --console-address ":9001" /data
+    environment:
+      MINIO_ROOT_USER: ${DB_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MINIO_BROWSER_LOGIN_ANIMATION: off
+      MINIO_PROMETHEUS_AUTH_TYPE: public
+      MINIO_PROMETHEUS_URL: http://prometheus:9090
+      MINIO_PROMETHEUS_JOB_ID: minio
+    volumes:
+      - minio:/data
+    ports:
+      - 9000:9000
+      - 9001:9001
+
+# PostgreSQL
+# The world's most advanced open source relational database
+# https://www.postgresql.org/
+  postgresql:
+    container_name:  r5a10-postgresql
+    build:
+      context: ./postgresql
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_ROOT_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - 5432:5432
+    configs:
+      - source: postgresql_initdb
+        target: /docker-entrypoint-initdb.d/
+    volumes:
+      - postgresql:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c 'pg_isready -U postgres -d ${DB_NAME}'"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+# PostgREST
+# Serve a fully RESTful API from any existing PostgreSQL database.
+# It provides a cleaner, more standards-compliant, faster API than you are likely to write from scratch.
+# https://docs.postgrest.org/en/v12/
+  postgrest:
+    container_name:  r5a10-postgrest
+    image: postgrest/postgrest:${POSTGREST_VERSION:-v12.2.2}
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    environment:
+      PGRST_DB_URI: postgres://${POSTGREST_USER}:${DB_ROOT_PASSWORD}@${POSTGREST_HOST}:${POSTGREST_DB_PORT:-5432}/${POSTGREST_DB}
+      PGRST_DB_SCHEMAS: ${POSTGREST_DB_SCHEMAS:-public}
+      PGRST_DB_ANON_ROLE: ${POSTGREST_DB_ANON_ROLE:-anon}
+      PGRST_JWT_SECRET: ${POSTGREST_JWT_SECRET}
+      PGRST_DB_USE_LEGACY_GUCS: ${POSTGREST_DB_USE_LEGACY_GUCS:-false}
+      PGRST_APP_SETTINGS_JWT_SECRET: ${POSTGREST_APP_SETTINGS_JWT_SECRET}
+      PGRST_APP_SETTINGS_JWT_EXP: ${POSTGREST_APP_SETTINGS_JWT_EXP}
+    command: postgrest
+
+# PostGraphile
+# Instant GraphQL API
+# https://www.graphile.org/postgraphile/
+  postgraphile:
+    container_name: r5a10-postgraphile
+    build:
+      context: ./postgraphile
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    command:
+      [
+        "--port", "${POSTGRAPHILE_PORT:-5000}",
+        "--schema", "${POSTGRAPHILE_SCHEMA:-public}",
+        "--enhance-graphiql",
+        "--cors",
+        "--allow-explain",
+        "--dynamic-json",
+        "--append-plugins",
+        "postgraphile-plugin-connection-filter,postgraphile-plugin-fulltext-filter,@graphile/postgis,postgraphile-plugin-connection-filter-postgis"
+      ]
+    environment:
+      - PGHOST=${POSTGRAPHILE_HOST:-postgresql}
+      - PGPORT=${POSTGRAPHILE_DB_PORT:-5432}
+      - PGUSER=postgres
+      - PGPASSWORD=${DB_ROOT_PASSWORD}
+      - PGDATABASE=${DB_NAME}
+
+# FerretDB
+# A truly Open Source MongoDB alternative, built on Postgres
+# https://www.ferretdb.com/
+  ferretdb:
+    container_name: r5a10-ferretdb
+    image: ghcr.io/ferretdb/ferretdb
+    ports:
+      - 27018:27017
+    volumes:
+      - ferretdb:/state
+    environment:
+      FERRETDB_POSTGRESQL_URL: postgres://${DB_ROOT_USER}:${DB_ROOT_PASSWORD}@postgresql:5432/${DB_NAME}
+
+# RabbitMQ
+# One broker to queue them all
+# https://www.rabbitmq.com/
+  rabbitmq:
+    image: rabbitmq:3.13
+    container_name: rabbitmq
+    ports:
+      - 1883:1883
+      - 15672:15672
+      - 61613:61613
+    volumes:
+      - rabbitmq:/var/lib/rabbitmq
+      - rabbitmq_log:/var/log/rabbitmq
+    configs:
+      - source: rabbit_enabled_plugins
+        target: /etc/rabbitmq/enabled_plugins
+    environment:
+      RABBITMQ_DEFAULT_USER: ${DB_ROOT_USER}
+      RABBITMQ_DEFAULT_PASS: ${DB_ROOT_PASSWORD}
+
+# imgproxy
+# Optimize images for web on the fly
+# https://imgproxy.net/
+  imgproxy:
+    image: darthsim/imgproxy:v3.25
+    container_name: r5a10-imgproxy
+    healthcheck:
+      test: [ "CMD", "imgproxy", "health" ]
+      timeout: 5s
+      interval: 5s
+      retries: 3
+    environment:
+      IMGPROXY_LOCAL_FILESYSTEM_ROOT: /
+      IMGPROXY_USE_ETAG: true
+      IMGPROXY_ENABLE_WEBP_DETECTION: true
+      IMGPROXY_ENABLE_AVIF_DETECTION: true
+    volumes:
+      - ./volumes/storage:/var/lib/storage:z
